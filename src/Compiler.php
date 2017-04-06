@@ -3226,7 +3226,7 @@ class Compiler
     public function addParsedFile($path)
     {
         if (isset($path) && file_exists($path)) {
-            $this->parsedFiles[realpath($path)] = filemtime($path);
+            $this->parsedFiles[$this->realPath($path)] = filemtime($path);
         }
     }
 
@@ -3351,7 +3351,7 @@ class Compiler
     protected function importFile($path, $out)
     {
         // see if tree is cached
-        $realPath = realpath($path);
+        $realPath = $this->realPath($path);
 
         if (isset($this->importCache[$realPath])) {
             $this->handleImportLoop($realPath);
@@ -3369,6 +3369,28 @@ class Compiler
         array_unshift($this->importPaths, $pi['dirname']);
         $this->compileChildrenNoReturn($tree->children, $out);
         array_shift($this->importPaths);
+    }
+
+    /**
+     * Return canonicalized path
+     *
+     * @param string $path
+     *
+     * @return string|null
+     */
+    protected function realPath($path)
+    {
+        $path = explode(DIRECTORY_SEPARATOR, $path);
+        $keys = array_keys($path, '..');
+
+        foreach($keys AS $keypos => $key)
+        {
+            array_splice($path, $key - ($keypos * 2 + 1), 2);
+        }
+
+        $path = implode(DIRECTORY_SEPARATOR, $path);
+
+        return str_replace('.' . DIRECTORY_SEPARATOR, '', $path);
     }
 
     /**
@@ -3482,7 +3504,7 @@ class Compiler
         for ($env = $this->env; $env; $env = $env->parent) {
             $file = $this->sourceNames[$env->block->sourceIndex];
 
-            if (realpath($file) === $name) {
+            if ($this->realPath($file) === $name) {
                 $this->throwError('An @import loop has been found: %s imports %s', $file, basename($file));
                 break;
             }
