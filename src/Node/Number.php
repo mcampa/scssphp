@@ -266,33 +266,26 @@ class Number extends Node implements \ArrayAccess
     public function output(Compiler $compiler = null)
     {
         $dimension = round($this->dimension, static::$precision);
-
         $units = array_filter($this->units, function ($unitSize) {
             return $unitSize;
         });
-
         if (count($units) > 1 && array_sum($units) === 0) {
             $dimension = $this->dimension;
             $units     = [];
-
             $this->normalizeUnits($dimension, $units, 'in');
-
             $dimension = round($dimension, static::$precision);
             $units     = array_filter($units, function ($unitSize) {
                 return $unitSize;
             });
         }
-
         $unitSize = array_sum($units);
-
         if ($compiler && ($unitSize > 1 || $unitSize < 0 || count($units) > 1)) {
             $compiler->throwError((string) $dimension . $this->unitStr() . " isn't a valid CSS value.");
         }
-
         reset($units);
-        list($unit, ) = each($units);
-
-        return (string) $dimension . $unit;
+        $unit = key($units);
+        $dimension = number_format($dimension, static::$precision, '.', '');
+        return (static::$precision ? rtrim(rtrim($dimension, '0'), '.') : $dimension) . $unit;
     }
 
     /**
